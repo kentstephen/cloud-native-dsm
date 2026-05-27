@@ -31,8 +31,26 @@ inconsistently populated; don't rely on them.
 - Lift DEM-streaming cells into a fresh notebook. Render ground in lonboard. Verify end-to-end first.
 
 ### Phase 2 — LPC streaming (new work)
-- COPC from Planetary Computer; confirm Pittsburgh tile coverage.
-- obstore range-reads → `laspy`/`lazrs` decode. Filter/color by classification.
+**I/O decision: stay on `prd-tnm`, plain LAZ, no signed URLs, same `obstore` S3Store as the DEM.**
+obstore does NOT need COPC — it does whole-object and range GETs on any bytes. COPC only unlocks
+sub-tile range reads, which we don't need at small-AOI scale. So: obstore fetches whole LAZ tiles →
+decode with `laspy`/`lazrs` → filter/color by classification. One cloud, one bucket, zero signing.
+
+- LPC tile index (remote, vsicurl, do NOT download — 2.8 GB):
+  `/vsicurl/https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/LPC/FullExtentSpatialMetadata/LPC_TESM.gpkg`
+  Columns `tile_id, project, project_id, workunit_id, geometry` (CRS EPSG:4269 — bbox works directly).
+- AOI coverage confirmed: **`PA_WesternPA_2019_D20`** (QL2 2019, 49 tiles for the full city bbox),
+  fallback `PA_STATEWIDE_S_2006_2008_Legacy_Data`. Sample tile_id `17TNE589473`.
+- TODO before coding: confirm the per-tile LAZ S3 path convention under
+  `s3://prd-tnm/StagedProducts/Elevation/LPC/Projects/<project>/` (list the prefix).
+
+**Scale ceiling (decided):** whole-tile LAZ works for a neighborhood-to-city AOI (a few tiles, tens
+of M points). It does NOT scale to "surrounding area" / county (~900 tiles, hundreds of GB, billions
+of points — exceeds the lonboard/deck.gl render budget and breaks the no-preprocessing model).
+Region-scale is deferred to Phase 6 via either (a) LOD over coarse octree levels — requires EPT/COPC,
+the no-sign range-readable option is `s3://usgs-lidar-public` (still AWS, no signing); or
+(b) rasterize Z→max to a 1m DSM grid and render that as terrain with overviews.
+Planetary Computer COPC (Azure, SAS-signed) is last resort only.
 
 ### Phase 3 — Compose DSM
 - Render classified LPC points over DEM terrain in lonboard. First real "DSM on the fly".
@@ -43,9 +61,10 @@ inconsistently populated; don't rely on them.
 ### Phase 5 — Live controls
 - Marimo reactive widgets: AOI bbox, class toggles, elevation exaggeration, point size, basemap.
 
-### Phase 6 — Optional / later
+### Phase 6 — Optional / later (region-scale + mesh)
 - anywidget deck.gl `TerrainLayer` for draped mesh (vs. points).
-- Gridded DSM rasterization; LOD via COPC/EPT octree levels for wider area.
+- Region-scale LPC: LOD via EPT octree levels (`s3://usgs-lidar-public`, no-sign) OR rasterize
+  Z→max to a 1m DSM grid rendered as terrain with overviews. (See Phase 2 scale ceiling.)
 
 **Guardrail:** small AOI first; expand only after each phase verifies.
 
