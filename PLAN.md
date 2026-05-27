@@ -41,8 +41,10 @@ decode with `laspy`/`lazrs` → filter/color by classification. One cloud, one b
   Columns `tile_id, project, project_id, workunit_id, geometry` (CRS EPSG:4269 — bbox works directly).
 - AOI coverage confirmed: **`PA_WesternPA_2019_D20`** (QL2 2019, 49 tiles for the full city bbox),
   fallback `PA_STATEWIDE_S_2006_2008_Legacy_Data`. Sample tile_id `17TNE589473`.
-- TODO before coding: confirm the per-tile LAZ S3 path convention under
-  `s3://prd-tnm/StagedProducts/Elevation/LPC/Projects/<project>/` (list the prefix).
+- TODO before coding: confirm the per-tile LAZ S3 path convention (index has `tile_id`/`project`
+  but no file path). The project folder has metadata + the `LAZ/` subdir + a download manifest —
+  browse it here to read off the tile→filename mapping for `17TNE589473`:
+  http://prd-tnm.s3-website-us-west-2.amazonaws.com/?prefix=StagedProducts/Elevation/LPC/Projects/PA_WesternPA_2019_D20/
 
 **Scale ceiling (decided):** whole-tile LAZ works for a neighborhood-to-city AOI (a few tiles, tens
 of M points). It does NOT scale to "surrounding area" / county (~900 tiles, hundreds of GB, billions
