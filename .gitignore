@@ -1,0 +1,12 @@
+# caches & scratch
+.cache/
+tmp/
+__marimo__/
+
+# claude
+.claude/memory/
+
+# python
+__pycache__/
+*.pyc
+.venv/
